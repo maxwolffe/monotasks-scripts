@@ -3,7 +3,6 @@ import inspect
 import json
 import os
 import subprocess
-import sys
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
@@ -24,7 +23,6 @@ def plot_continuous_monitor(filename, open_graphs=False, use_gnuplot=False):
 
   # Get the location of the monotasks-scripts repository by getting the directory containing the
   # file that is currently being executed.
-  scripts_dir = os.path.dirname(inspect.stack()[0][1])
 
   start = -1
   at_beginning = True
@@ -46,7 +44,7 @@ def plot_continuous_monitor(filename, open_graphs=False, use_gnuplot=False):
       start = time
     disk_utilizations = json_data["Disk Utilization"]["Device Name To Utilization"]
     xvdf_utilization = get_util_for_disk(disk_utilizations, "xvdf")
-    xvdb_utilization= get_util_for_disk(disk_utilizations, "xvdb")
+    xvdb_utilization = get_util_for_disk(disk_utilizations, "xvdb")
     xvdf_total_utilization = xvdf_utilization["Disk Utilization"]
     xvdb_total_utilization = xvdb_utilization["Disk Utilization"]
     xvdf_read_throughput = xvdf_utilization["Read Throughput"]
@@ -132,7 +130,8 @@ def plot_continuous_monitor(filename, open_graphs=False, use_gnuplot=False):
       'xvdf running disk monotasks': xvdf_running_disk_monotasks,
       'xvdb running disk monotasks': xvdb_running_disk_monotasks,
       'free heap memory': free_heap_memory / BYTES_PER_GIGABYTE,
-      'free off heap memory': free_off_heap_memory / BYTES_PER_GIGABYTE
+      'free off heap memory': free_off_heap_memory / BYTES_PER_GIGABYTE,
+      'local running macrotasks': local_running_macrotasks
     }
     continuous_monitor_data.append(data)
     if use_gnuplot:
@@ -155,29 +154,31 @@ def get_util_for_disk(disk_utils, disk):
   return None
 
 def gnuplot_data_line(data_hash):
-  """ Helper function to order continuous montior data for gnuplot to use """
-  return [data_hash['time'],
-          data_hash['xvdf utilization'],
-          data_hash['xvdb utilization'],
-          data_hash['cpu utilization'],
-          data_hash['bytes received'],
-          data_hash['bytes transmitted'],
-          data_hash['running compute monotasks'],
-          data_hash['running monotasks'],
-          data_hash['gc fraction'],
-          data_hash['outstanding network bytes'],
-          data_hash['macrotasks in network'],
-          data_hash['macrotasks in compute'],
-          data_hash['cpu system'],
-          data_hash['macrotasks in disk'],
-          data_hash['xvdf read throughput'],
-          data_hash['xvdf write throughput'],
-          data_hash['xvdb read throughput'],
-          data_hash['xvdb write throughput'],
-          data_hash['xvdf running disk monotasks'],
-          data_hash['xvdb running disk monotasks'],
-          data_hash['free heap memory'],
-          data_hash['free off heap memory']]
+    """ Helper function to order continuous montior data for gnuplot to use """
+    return [data_hash['time'],
+            data_hash['xvdf utilization'],
+            data_hash['xvdb utilization'],
+            data_hash['cpu utilization'],
+            data_hash['bytes received'],
+            data_hash['bytes transmitted'],
+            data_hash['running compute monotasks'],
+            data_hash['running monotasks'],
+            data_hash['gc fraction'],
+            data_hash['outstanding network bytes'],
+            data_hash['macrotasks in network'],
+            data_hash['macrotasks in compute'],
+            data_hash['cpu system'],
+            data_hash['macrotasks in disk'],
+            data_hash['xvdf read throughput'],
+            data_hash['xvdf write throughput'],
+            data_hash['xvdb read throughput'],
+            data_hash['xvdb write throughput'],
+            data_hash['xvdf running disk monotasks'],
+            data_hash['xvdb running disk monotasks'],
+            data_hash['free heap memory'],
+            data_hash['free off heap memory'],
+            data_hash['local running macrotasks']]
+
 
 def plot_gnuplot(file_prefix, open_graphs):
   """
@@ -212,14 +213,15 @@ def plot_gnuplot_attribute(file_prefix, attribute, scripts_dir):
 
 def plot_matplotlib(cm_data, file_prefix, open_graphs):
   disk_utilization_params = ['xvdf utilization',
-                              'xvdb utilization',
-                              'xvdf write throughput',
-                              'xvdf read throughput',
-                              'xvdb write throughput',
-                              'xvdb read throughput']
+                             'xvdb utilization',
+                             'xvdf write throughput',
+                             'xvdf read throughput',
+                             'xvdb write throughput',
+                             'xvdb read throughput']
   memory_params = ['free heap memory',
-                    'free off heap memory']
-  monotasks_params = ['macrotasks in network',
+                   'free off heap memory']
+  monotasks_params = ['local running macrotasks',
+                      'macrotasks in network',
                       'macrotasks in compute',
                       'macrotasks in disk',
                       'running monotasks',
@@ -241,16 +243,17 @@ def plot_matplotlib(cm_data, file_prefix, open_graphs):
 
   def plot_params(params_to_plot, title):
     """
-    Creates a matplotlib graph using continuous monitor data.Time is the x axis and data corresponding to
-    each parameter is used to generate a new line on the line graph.
+    Creates a matplotlib graph using continuous monitor data.
+    Time is the x axis and data corresponding to each parameter is used to
+    generate a new line on the line graph.
     """
-    filename = '{0}_{1}.pdf'.format(file_prefix, '_'.join(title.lower().split()))
     handles = []
     time = continuous_monitor_col('time', cm_data)
     for key in params_to_plot:
-      handle, = plt.plot(time, continuous_monitor_col(key, cm_data), label=key)
+      handle, = plt.plot(time, continuous_monitor_col(key, cm_data),
+                         label=key)
       handles.append(handle)
-    plt.legend(handles = handles)
+    plt.legend(handles=handles)
     plt.title(title)
     pdf.savefig()
     if open_graphs:
@@ -272,7 +275,8 @@ def plot_matplotlib(cm_data, file_prefix, open_graphs):
     plot_params(xvdf_params,
                 'xvdf Utilization')
 
-def plot_single_disk(filename, utilization_filename, disk_to_plot, disks_to_skip, scripts_dir):
+
+def plot_single_disk(filename, util_filename, disk_to_plot, disks_to_skip, scripts_dir):
   """
   Plots the utilization for a single disk, ignoring the utilization for any disks in
   disks_to_skip.
@@ -287,8 +291,8 @@ def plot_single_disk(filename, utilization_filename, disk_to_plot, disks_to_skip
       if line.find(disk_to_skip) != -1:
         skip = True
     if not skip:
-      new_line = line.replace("__OUT_FILENAME__", disk_plot_output).replace(
-        "__NAME__", utilization_filename)
+      new_line = line.rplace("__OUT_FILENAME__", disk_plot_output).replace(
+        "__NAME__", util_filename)
       disk_plot_file.write(new_line)
 
   disk_plot_file.close()
