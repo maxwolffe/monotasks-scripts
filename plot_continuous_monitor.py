@@ -5,7 +5,7 @@ import plot_matplotlib
 
 BYTES_PER_GIGABYTE = float(1024 * 1024 * 1024)
 BYTES_PER_KILOBYTE = 1024 * 1024
-BYTES_PER_GIGABIT = 125000000.
+BYTES_PER_GIGABIT = BYTES_PER_GIGABYTE / 8
 CORES = 8.0
 
 def plot_continuous_monitor(filename, open_graphs=False, use_gnuplot=False):

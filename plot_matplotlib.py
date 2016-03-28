@@ -51,7 +51,7 @@ def plot(cm_data, file_prefix, open_graphs):
     time = continuous_monitor_col('time', cm_data)
     for key in params_to_plot:
       handle = pyplot.plot(time, continuous_monitor_col(key, cm_data),
-                            label=key)[0]
+                           label=key)[0]
       handles.append(handle)
     pyplot.legend(handles=handles)
     pyplot.title(title)
