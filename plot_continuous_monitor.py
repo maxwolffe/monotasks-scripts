@@ -4,7 +4,9 @@ import plot_gnuplot
 import plot_matplotlib
 
 BYTES_PER_GIGABYTE = float(1024 * 1024 * 1024)
-
+BYTES_PER_KILOBYTE = 1024 * 1024
+BYTES_PER_GIGABIT = 125000000.
+CORES = 8.0
 
 def plot_continuous_monitor(filename, open_graphs=False, use_gnuplot=False):
   continuous_monitor_data = []
@@ -97,16 +99,16 @@ def plot_continuous_monitor(filename, open_graphs=False, use_gnuplot=False):
       ('time', time - start),
       ('xvdf utilization', xvdf_total_utilization),
       ('xvdb utilization', xvdb_total_utilization),
-      ('cpu utilization', cpu_total / 8.0),  # Cores in machine?
-      ('bytes received', bytes_received / 125000000.),
-      ('bytes transmitted', bytes_transmitted / 125000000.),  # what is the 125000000 magic number?
+      ('cpu utilization', cpu_total / CORES),
+      ('bytes received', bytes_received / BYTES_PER_GIGABIT),
+      ('bytes transmitted', bytes_transmitted / BYTES_PER_GIGABIT),
       ('running compute monotasks', running_compute_monotasks),
       ('running monotasks', running_macrotasks),
       ('gc fraction', gc_fraction),
-      ('outstanding network bytes', outstanding_network_bytes / (1024 * 1024)),
+      ('outstanding network bytes', outstanding_network_bytes / BYTES_PER_KILOBYTE),
       ('macrotasks in network', macrotasks_in_network),
       ('macrotasks in compute', macrotasks_in_compute),
-      ('cpu system', cpu_system / 8.0),
+      ('cpu system', cpu_system / CORES),
       ('macrotasks in disk', macrotasks_in_disk),
       ('xvdf read throughput', xvdf_read_throughput),
       ('xvdf write throughput', xvdf_write_throughput),
@@ -141,13 +143,16 @@ def get_util_for_disk(disk_utils, disk):
 
 def parse_args():
   parser = argparse.ArgumentParser(description="Plots Spark continuous monitor logs.")
-  parser.add_argument(
-    "-f", "--filename", help="The path to a continuous monitor log file.", required=True)
-  parser.add_argument(
-    "-o", "--open_graphs", help="open generated graphs", action="store_true")
-  parser.add_argument(
-    "-g", "--gnuplot", help="generate graphs with gnuplot", action="store_true")
-  parser.set_defaults(gnuplot=False, open_graphs=False)
+  parser.add_argument("-f", "--filename",
+                      help="The path to a continuous monitor log file.",
+                      required=True)
+  parser.add_argument("-o", "--open_graphs",
+                      help="open generated graphs",
+                      action="store_true", default=False)
+  parser.add_argument("-g", "--gnuplot",
+                      help="generate graphs with gnuplot",
+                      action="store_true", default=False)
+
   return parser.parse_args()
 
 
