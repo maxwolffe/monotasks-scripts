@@ -12,6 +12,8 @@ import sys
 
 from job import Job
 
+CORES = 8.
+
 def get_json(line):
   # Need to first strip the trailing newline, and then escape newlines (which can appear
   # in the middle of some of the JSON) so that JSON library doesn't barf.
@@ -64,6 +66,8 @@ class Analyzer:
         for (stage_id, stage) in job.stages.iteritems()]
       self.logger.debug("Job %s has stages: %s and runtime %sm (%ss)" %
         (job_id, stage_str, job_runtime / 60., job_runtime))
+      for stage_id, stage in job.stages.iteritems():
+        stage.ideal_time_utilization(CORES)
 
   def write_summary_file(self, values, filename):
     summary_file = open(filename, "w")
